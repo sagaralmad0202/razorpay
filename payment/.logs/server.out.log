@@ -1,0 +1,5 @@
+
+> payment@0.1.0 server
+> node server/index.js
+
+Payment server running at http://localhost:5000
