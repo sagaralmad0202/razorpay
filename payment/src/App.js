@@ -3,7 +3,7 @@ import './App.css';
 
 const CHECKOUT_SCRIPT_URL = 'https://checkout.razorpay.com/v1/checkout.js';
 const API_BASE_URL = (process.env.REACT_APP_API_BASE_URL || '').replace(/\/$/, '');
-const SUCCESS_PATH = '/payment-success';
+const SUCCESS_ROUTE = '#/payment-success';
 const PAYMENT_STORAGE_KEY = 'razorpay:last-successful-payment';
 const currencyFormatter = new Intl.NumberFormat('en-IN', {
   currency: 'INR',
@@ -18,7 +18,7 @@ const initialForm = {
 };
 
 function App() {
-  const [routePath, setRoutePath] = useState(() => window.location.pathname);
+  const [routePath, setRoutePath] = useState(() => getCurrentRoute());
   const [completedPayment, setCompletedPayment] = useState(() => readStoredPayment());
   const [form, setForm] = useState(initialForm);
   const [isScriptReady, setIsScriptReady] = useState(false);
@@ -36,13 +36,15 @@ function App() {
 
   useEffect(() => {
     const handlePopState = () => {
-      setRoutePath(window.location.pathname);
+      setRoutePath(getCurrentRoute());
       setCompletedPayment(readStoredPayment());
     };
 
+    window.addEventListener('hashchange', handlePopState);
     window.addEventListener('popstate', handlePopState);
 
     return () => {
+      window.removeEventListener('hashchange', handlePopState);
       window.removeEventListener('popstate', handlePopState);
     };
   }, []);
@@ -199,7 +201,7 @@ function App() {
               title: 'Payment successful',
               type: 'success',
             });
-            navigateTo(SUCCESS_PATH);
+            navigateTo(SUCCESS_ROUTE);
           } catch (error) {
             setStatus({
               message: error.message,
@@ -261,7 +263,7 @@ function App() {
     }
   };
 
-  if (routePath === SUCCESS_PATH) {
+  if (routePath === SUCCESS_ROUTE) {
     return (
       <PaymentSuccessPage
         onDownloadInvoice={downloadInvoice}
@@ -400,7 +402,7 @@ function PaymentSuccessPage({ onDownloadInvoice, onNewPayment, payment }) {
     <div className="app-shell">
       <main className="success-layout">
         <section className="success-panel" aria-labelledby="success-title">
-          <div className="success-mark" aria-hidden="true">?</div>
+          <div className="success-mark" aria-hidden="true">PAID</div>
           <p className="eyebrow">Payment verified</p>
           <h1 id="success-title">Payment successful</h1>
           <p className="lede">Your payment was verified successfully. Download the invoice for your records.</p>
@@ -467,6 +469,10 @@ async function postJson(path, payload) {
   }
 
   return data;
+}
+
+function getCurrentRoute() {
+  return window.location.hash || window.location.pathname;
 }
 
 function readStoredPayment() {
